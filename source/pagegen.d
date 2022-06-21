@@ -1,4 +1,4 @@
-module pagegen.pagegen;
+module pagegen;
 
 import utils.ds;
 import utils.misc;
