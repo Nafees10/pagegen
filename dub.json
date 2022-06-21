@@ -1,0 +1,12 @@
+{
+	"authors": [
+		"nafees"
+	],
+	"copyright": "Copyright © 2022, nafees",
+	"dependencies": {
+		"utils": "~>0.4.5"
+	},
+	"description": "Page Generator, using templates",
+	"license": "MIT",
+	"name": "pagegen"
+}

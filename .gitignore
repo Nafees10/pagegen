@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/pagegen
+pagegen.so
+pagegen.dylib
+pagegen.dll
+pagegen.a
+pagegen.lib
+pagegen-test-*
+*.exe
+*.o
+*.obj
+*.lst
