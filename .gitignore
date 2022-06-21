@@ -10,6 +10,7 @@ pagegen.dll
 pagegen.a
 pagegen.lib
 pagegen-test-*
+lib*.a
 *.exe
 *.o
 *.obj
