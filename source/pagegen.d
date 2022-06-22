@@ -12,8 +12,16 @@ debug import std.stdio;
 /// Function used to join together two strings.
 /// the first string may already be multiple strings joined
 /// 
+/// Params:
+/// 1. the string generated till now. This will be multiple strings glued if >2 strings in total
+/// 2. string is the string to glue
+/// 3. the index number of string to be glued. starting from 0
+/// 
+/// Note: it can be called with first string as empty string as well, in case the string to be glued is
+/// the first (0th index) string
+/// 
 /// Returns: the joined string
-alias Glue = string function(string, string);
+alias Glue = string function(string, string, uint);
 
 /// A template, from which page can be generated.
 /// 
@@ -100,10 +108,9 @@ public:
 		string ret;
 		if (!vals.length)
 			return ret;
-		ret = strGen(vals[0], errStr);
-		foreach (valSet; vals[1 .. $]){
+		foreach (i, valSet; vals){
 			static if (glue)
-				ret = glue(ret, strGen(valSet));
+				ret = glue(ret, strGen(valSet), i);
 			else
 				ret ~= strGen(valSet);
 		}
@@ -142,4 +149,23 @@ unittest{
 		])
 	]);
 	assert(str == "<title> title </title><body> <h1>content title</h1><p>blablabla</p> </body>");
+
+	enum Cell : uint{
+		First,
+		Second
+	}
+
+	auto tableGen = new Template!Cell("<tr><td> %First% </td><td> %Second% </td></tr>");
+	str = tableGen.strGen([
+		[
+			Cell.First  : "top left",
+			Cell.Second : "top right"
+		],[
+			Cell.First  : "bottom left",
+			Cell.Second : "bottom right"
+		]
+	]);
+	writeln (str);
+	assert(str ==
+		"<tr><td> top left </td><td> top right </td></tr><tr><td> bottom left </td><td> bottom right </td></tr>");
 }
