@@ -10,24 +10,22 @@ import std.conv : to;
 debug import std.stdio;
 
 /// Function used to join together two strings.
-/// the first string may already be multiple strings joined
 /// 
 /// Params:
-/// 1. the string generated till now. This will be multiple strings glued if >2 strings in total
+/// 1. the string generated till now, this is the one that should be modified (passed by ref)
 /// 2. string is the string to glue
 /// 3. the index number of string to be glued. starting from 0
 /// 
 /// Note: it can be called with first string as empty string as well, in case the string to be glued is
 /// the first (0th index) string
-/// 
-/// Returns: the joined string
-alias Glue = string function(string, string, uint);
+alias Glue = void function(ref string, string, uint);
 
 /// A template, from which page can be generated.
 /// 
 /// Must be used with T as an enum of base uint.
 /// Enum members are treated as the variable names in template text
-class Template(T, Glue glue = null, char VAR_CHAR = '%') if (is(T == enum) && is(OriginalType!(Unqual!T) == uint)){
+class Template(T, char VAR_CHAR = '%')
+	if (is(T == enum) && is(OriginalType!(Unqual!T) == uint)){
 private:
 	struct Piece{
 		enum Type{
@@ -48,6 +46,8 @@ private:
 			type = Type.Variable;
 		}
 	}
+	/// Glue function
+	Glue _glue;
 	/// pieces, in the order they are to be assembled
 	Piece[] _pieces;
 public:
@@ -87,6 +87,10 @@ public:
 			raw = raw[indexEnd + 1 .. $];
 		}
 	}
+	/// glue function
+	@property ref Glue glue(){
+		return _glue;
+	}
 	/// generates string, for a single set of values
 	string strGen(string[T] vals, string errStr = ""){
 		string ret;
@@ -108,12 +112,13 @@ public:
 		string ret;
 		if (!vals.length)
 			return ret;
-		foreach (i, valSet; vals){
-			static if (glue)
-				ret = glue(ret, strGen(valSet), i);
-			else
-				ret ~= strGen(valSet);
+		if (_glue){
+			foreach (i, valSet; vals)
+				_glue(ret, strGen(valSet), cast(uint)i);
+			return ret;
 		}
+		foreach (valSet; vals)
+			ret ~= strGen(valSet);
 		return ret;
 	}
 }
@@ -165,7 +170,23 @@ unittest{
 			Cell.Second : "bottom right"
 		]
 	]);
-	writeln (str);
 	assert(str ==
 		"<tr><td> top left </td><td> top right </td></tr><tr><td> bottom left </td><td> bottom right </td></tr>");
+	
+	static void glue(ref string a, string b, uint i){
+		a ~= to!string(i) ~ b;
+	}
+	tableGen.glue = &glue;
+
+	str = tableGen.strGen([
+		[
+			Cell.First  : "top left",
+			Cell.Second : "top right"
+		],[
+			Cell.First  : "bottom left",
+			Cell.Second : "bottom right"
+		]
+	]);
+	assert(str ==
+		"0<tr><td> top left </td><td> top right </td></tr>1<tr><td> bottom left </td><td> bottom right </td></tr>");
 }
