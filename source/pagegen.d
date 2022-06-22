@@ -9,8 +9,17 @@ import std.conv : to;
 
 debug import std.stdio;
 
-/// A template, from which page can be generated
-class Template(T, char VAR_CHAR = '%') if (is(T == enum) && is(OriginalType!(Unqual!T) == uint)){
+/// Function used to join together two strings.
+/// the first string may already be multiple strings joined
+/// 
+/// Returns: the joined string
+alias Glue = string function(string, string);
+
+/// A template, from which page can be generated.
+/// 
+/// Must be used with T as an enum of base uint.
+/// Enum members are treated as the variable names in template text
+class Template(T, Glue glue = null, char VAR_CHAR = '%') if (is(T == enum) && is(OriginalType!(Unqual!T) == uint)){
 private:
 	struct Piece{
 		enum Type{
@@ -33,8 +42,6 @@ private:
 	}
 	/// pieces, in the order they are to be assembled
 	Piece[] _pieces;
-	/// values for variable pieces
-	string[T] _vals;
 public:
 	/// Constructor
 	/// will treat enum member names as variable names. The enum must have
@@ -72,26 +79,33 @@ public:
 			raw = raw[indexEnd + 1 .. $];
 		}
 	}
-	/// sets value for a variable piece
-	void valSet(T varId, string val){
-		_vals[varId] = val;
-	}
-	/// resets all values
-	void valReset(){
-		_vals.clear();
-	}
-	/// generates string
-	string strGen(string errStr = ""){
+	/// generates string, for a single set of values
+	string strGen(string[T] vals, string errStr = ""){
 		string ret;
 		foreach (i, piece; _pieces){
 			if (piece.type == Piece.Type.String){
 				ret ~= piece.str;
 				continue;
 			}
-			if (cast(T)piece.id in _vals)
-				ret ~= _vals[cast(T)piece.id];
+			if (cast(T)piece.id in vals)
+				ret ~= vals[cast(T)piece.id];
 			else if (errStr.length)
 				debug ret ~= errStr;
+		}
+		return ret;
+	}
+	/// generates string, for multiple sets of values, using glue function to join
+	/// if glue function is not provided, they are simply appended
+	string strGen(string[T][] vals, string errStr = ""){
+		string ret;
+		if (!vals.length)
+			return ret;
+		ret = strGen(vals[0], errStr);
+		foreach (valSet; vals[1 .. $]){
+			static if (glue)
+				ret = glue(ret, strGen(valSet));
+			else
+				ret ~= strGen(valSet);
 		}
 		return ret;
 	}
@@ -102,17 +116,30 @@ unittest{
 		Title,
 		Content
 	}
-	Template!Parts tmpl = new Template!Parts("<title>%Title%</title><body>%Content%</body>");
-	tmpl.valSet(Parts.Title, "some title");
-	tmpl.valSet(Parts.Content, "some content");
-	string str = tmpl.strGen();
-	assert(str == "<title>some title</title><body>some content</body>");
-	tmpl.valReset();
+	auto tmpl = new Template!Parts("<title> %Title% </title><body> %Content% </body>");
+	string str = tmpl.strGen([
+		Parts.Title : "some title",
+		Parts.Content : "some content"
+	]);
+	assert(str == "<title> some title </title><body> some content </body>");
 
-	tmpl.valSet(Parts.Title, "title");
-	str = tmpl.strGen();
-	assert(str == "<title>title</title><body></body>");
-	tmpl.valSet(Parts.Content, "content");
-	str = tmpl.strGen();
-	assert(str == "<title>title</title><body>content</body>");
+	str = tmpl.strGen([
+		Parts.Title : "title"
+	]);
+	assert(str == "<title> title </title><body>  </body>");
+
+
+	enum ContentParts : uint{
+		Heading,
+		Body
+	}
+	auto tmplC = new Template!ContentParts("<h1>%Heading%</h1><p>%Body%</p>");
+	str = tmpl.strGen([
+		Parts.Title : "title",
+		Parts.Content : tmplC.strGen([
+			ContentParts.Heading : "content title",
+			ContentParts.Body : "blablabla"
+		])
+	]);
+	assert(str == "<title> title </title><body> <h1>content title</h1><p>blablabla</p> </body>");
 }
