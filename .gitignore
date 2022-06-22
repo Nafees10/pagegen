@@ -3,6 +3,7 @@ dub.selections.json
 docs.json
 __dummy.html
 docs/
+/.vscode
 /pagegen
 pagegen.so
 pagegen.dylib
