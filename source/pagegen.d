@@ -18,7 +18,7 @@ debug import std.stdio;
 /// 
 /// Note: it can be called with first string as empty string as well, in case the string to be glued is
 /// the first (0th index) string
-alias Glue = void function(ref string, string, uint);
+public alias Glue = void function(ref string, string, uint);
 
 /// A template, from which page can be generated.
 /// 
