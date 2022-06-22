@@ -22,10 +22,10 @@ public alias Glue = void function(ref string, string, uint);
 
 /// A template, from which page can be generated.
 /// 
-/// Must be used with T as an enum of base uint.
+/// Must be used with T as an enum
 /// Enum members are treated as the variable names in template text
 class Template(T, char VAR_CHAR = '%')
-	if (is(T == enum) && is(OriginalType!(Unqual!T) == uint)){
+	if (is(T == enum)/* && !is(OriginalType!(Unqual!T) == string)*/){
 private:
 	struct Piece{
 		enum Type{
@@ -35,15 +35,15 @@ private:
 		Type type;
 		union{
 			string str;
-			uint id;
+			T id;
 		}
 		this(string str){
 			this.str = str;
 			type = Type.String;
 		}
-		this (uint id){
+		this (T id, Type type){
 			this.id = id;
-			type = Type.Variable;
+			this.type = type;
 		}
 	}
 	/// Glue function
@@ -55,10 +55,10 @@ public:
 	/// will treat enum member names as variable names. The enum must have
 	/// int base type.
 	this(string raw){
-		uint[] vals;
+		T[] vals;
 		string[] names;
 		foreach (i; [EnumMembers!T]){
-			vals ~= i; // get the uint corresponding to enum member
+			vals ~= i; // get the value corresponding to enum member
 			names ~= to!string(i); // this should get enum member name
 		}
 		while (raw.length){
@@ -80,7 +80,7 @@ public:
 			string varName = raw[indexStart + 1 .. indexEnd];
 			int index = cast(int)countUntil(names, varName);
 			if (index >= 0){
-				_pieces ~= Piece(index);
+				_pieces ~= Piece(vals[index], Piece.Type.Variable);
 			}else{
 				_pieces ~= Piece(raw[indexStart .. indexEnd + 1].dup);
 			}
@@ -99,8 +99,9 @@ public:
 				ret ~= piece.str;
 				continue;
 			}
-			if (cast(T)piece.id in vals)
-				ret ~= vals[cast(T)piece.id];
+			string* sPtr = cast(T)piece.id in vals;
+			if (sPtr)
+				ret ~= *sPtr;
 			else if (errStr.length)
 				debug ret ~= errStr;
 		}
@@ -155,9 +156,9 @@ unittest{
 	]);
 	assert(str == "<title> title </title><body> <h1>content title</h1><p>blablabla</p> </body>");
 
-	enum Cell : uint{
-		First,
-		Second
+	enum Cell : string{
+		First = "a",
+		Second = "aa"
 	}
 
 	auto tableGen = new Template!Cell("<tr><td> %First% </td><td> %Second% </td></tr>");
