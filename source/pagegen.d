@@ -54,10 +54,10 @@ public:
 	/// Constructor
 	/// will treat enum member names as variable names. The enum must have
 	/// int base type.
-	this(string raw){
+	this(string raw) pure {
 		T[] vals;
 		string[] names;
-		foreach (i; [EnumMembers!T]){
+		static foreach (i; [EnumMembers!T]){
 			vals ~= i; // get the value corresponding to enum member
 			names ~= to!string(i); // this should get enum member name
 		}
