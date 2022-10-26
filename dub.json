@@ -4,7 +4,7 @@
 	],
 	"copyright": "Copyright © 2022, nafees",
 	"dependencies": {
-		"utils": "~>0.4.5"
+		"utils": "~>0.6.2"
 	},
 	"description": "Page Generator, using templates",
 	"license": "MIT",
