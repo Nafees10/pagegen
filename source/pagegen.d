@@ -124,28 +124,34 @@ public:
 	}
 	/// generates string, for multiple sets of values, using glue function to join
 	/// if glue function is not provided, they are simply appended
-	/// All arrays must be of equal length
 	string strGen(string[][T] vals, string errStr = ""){
 		string ret;
 		if (!vals.keys.length)
 			return ret;
-		foreach (i; 0 .. vals.keys.length){
+		uint i;
+		bool added;
+		while (true){
 			string str;
+			added = false;
 			foreach (piece; _pieces){
 				if (piece.type == Piece.Type.String){
 					str ~= piece.str;
 					continue;
 				}
 				string[]* sPtr = cast(T)piece.id in vals;
-				if (sPtr && i < (*sPtr).length)
+				if (sPtr && i < (*sPtr).length){
+					added = true;
 					str ~= (*sPtr)[i];
-				else if (errStr.length)
+				}else if (errStr.length)
 					debug str ~= errStr;
 			}
+			if (!added)
+				break;
 			if (_glue)
 				_glue(ret, str, cast(uint)i);
 			else
 				ret ~= str;
+			i ++;
 		}
 		return ret;
 	}
