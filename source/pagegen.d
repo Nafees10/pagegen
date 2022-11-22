@@ -119,7 +119,34 @@ public:
 			return ret;
 		}
 		foreach (valSet; vals)
-			ret ~= strGen(valSet);
+			ret ~= strGen(valSet, errStr);
+		return ret;
+	}
+	/// generates string, for multiple sets of values, using glue function to join
+	/// if glue function is not provided, they are simply appended
+	/// All arrays must be of equal length
+	string strGen(string[][T] vals, string errStr = ""){
+		string ret;
+		if (!vals.keys.length)
+			return ret;
+		foreach (i; 0 .. vals.keys.length){
+			string str;
+			foreach (piece; _pieces){
+				if (piece.type == Piece.Type.String){
+					str ~= piece.str;
+					continue;
+				}
+				string[]* sPtr = cast(T)piece.id in vals;
+				if (sPtr && i < (*sPtr).length)
+					str ~= (*sPtr)[i];
+				else if (errStr.length)
+					debug str ~= errStr;
+			}
+			if (_glue)
+				_glue(ret, str, cast(uint)i);
+			else
+				ret ~= str;
+		}
 		return ret;
 	}
 }
@@ -173,6 +200,12 @@ unittest{
 	]);
 	assert(str ==
 		"<tr><td> top left </td><td> top right </td></tr><tr><td> bottom left </td><td> bottom right </td></tr>");
+	str = tableGen.strGen([
+			Cell.First : ["top left", "bottom left"],
+			Cell.Second : ["top right", "bottom right"]
+	]);
+	assert(str ==
+		"<tr><td> top left </td><td> top right </td></tr><tr><td> bottom left </td><td> bottom right </td></tr>", str);
 	
 	static void glue(ref string a, string b, uint i){
 		a ~= to!string(i) ~ b;
